@@ -1,138 +1,148 @@
-%macro scall 4
-    mov rax, %1
-    mov rdi, %2
-    mov rsi, %3
-    mov rdx, %4
-    syscall
+section .data
+rmodemsg db 10,'Processor is in Real Mode'
+rmsg_len:equ $-rmodemsg
+
+pmodemsg db 10,'Processor is in Protected Mode'
+pmsg_len:equ $-pmodemsg
+
+gdtmsg db 10,'GDT:'
+gmsg_len:equ $-gdtmsg
+
+ldtmsg db 10,'LDT:'
+lmsg_len:equ $-ldtmsg
+
+idtmsg db 10,'IDT:'
+imsg_len:equ $-idtmsg
+
+trmsg db 10,'Task Register:'
+tmsg_len: equ $-trmsg
+
+mswmsg db 10,'Machine Status Word:'
+mmsg_len:equ $-mswmsg
+
+cpumsg db 10, 'CPU ID:'
+cmsg_len: equ $-cpumsg
+
+colmsg db ':'
+
+nwline db 10
+
+section .bss
+gdt resd 1
+   resw 1
+ldt resw 1
+idt resd 1
+   resw 1
+tr  resw 1
+
+cr0_data resd 1
+
+dnum_buff resb 04
+
+%macro print 2
+mov rax,01
+mov rdi,01
+mov rsi,%1
+mov rdx,%2
+syscall
 %endmacro
 
-section .data
-    Prot db "Protected Mode : ", 0Ah
-    Protlen equ $-Prot
-   
-    Real db "Real Mode : ", 0Ah
-    Reallen equ $-Real
-   
-    msw db "MSW  : "
-    mswlen equ $-msw
-   
-    gdtr db 0Ah,"GDTR : "
-    gdtrlen equ $-gdtr
-   
-    idt db 0Ah,"IDTR : "
-    idtlen equ $-idt
-   
-    tr db 0Ah,"TR : "
-    trlen equ $-tr
-   
-    ld db 0Ah,"LDTR : "
-    ldlen equ $-ld
-   
-section .bss
-    gdt resb 4          ;to hold the value of the base address
-    gdtli resb 2        ;to hold the value of the limit field
-    msw1 resb 2         ;to hold msw value
-    temp resb 1         ;to temporary store the value of al register
-    result1 resq 1      
-    result2 resw 1
-    idt1 resb 4         ;to hold the value of the base address
-    idtli resb 2        ;to hold the value of the limit field
-    ldt resb 2          ;to hold ldtr value
-    t_r resb 2          ;to hold the tr value
-
 section .text
-    global _start
+global _start
 _start:
-    mov rsi, msw1
-    smsw [rsi]
-    mov ax, [rsi]
-    bt ax, 0                ;if carry = 1 then it is protected
-    jc next
-    scall 1,1,Real,Reallen  
-    jmp z1
-   
-next:
-    scall 1,1,Prot,Protlen
-   
-z1:
-    scall 1,1,msw, mswlen ;display the contents of msw
-    mov ax, word[msw1]
-    call display2
-   
-    scall 1,1,gdtr,gdtrlen
-    mov rsi,gdt
-    sgdt [rsi]
-    mov rax, qword[rsi]
-    call display1       ;display the contents of gdtr
-   
-    mov rsi,gdtli
-    mov ax,word[rsi]
-    call display2       ;display the table limit of gdtr
-   
-    scall 1,1,ld,ldlen
-    mov rsi,ldt
-    sldt [rsi]
-    mov rax, [ldt]
-    call display2       ;display the contents of ldtr
-   
-    scall 1,1,idt,idtlen
-    mov rsi,idt1
-    sidt [rsi]
-    mov rax, [idt1]
-    call display1       ;display the contents of idtr
-   
-    mov ax,[idtli]
-    call display2       ;display the table limit of idtr
-   
-    scall 1,1,tr,trlen
-    mov rsi,t_r
-    str [rsi]
-    mov rax, [t_r]
-    call display2       ;display the contents of tr
-   
-    scall 60,0,0,0
-   
-display1:
-    mov bp, 16              ;to display 64 bit no (same process as we have done earlier)
-up1:
-    rol ax,4
-    mov qword[result1],rax
-    and al,0fh
-    cmp al,09h
-    jbe next1
-    add al,07h
-next1:
-    add al,30h
-    mov byte[temp],al
-    scall 1,1,temp,1
-    mov rax,qword[result1]
-    dec bp
-    jnz up1
-    ret
+smsw eax ;Reading CR0. As MSW is 32-bit cannot use RAX register.
 
-display2:
-    mov bp,4                ;to display 16 bit no (same process as we have done earlier)
-up2:
-    rol ax,4
-    mov word[result2],ax
-    and al,0fh
-    cmp al,09h
-    jbe next2
-    add al,07h
-next2:
-    add al,30h
-    mov byte[temp],al
-    scall 1,1,temp,1
-    mov ax,word[result2]
-    dec bp
-    jnz up2
-    ret
-   
-;nasm -f elf64 mp07.asm && ld -o mp07 mp07.o && ./mp07
-;output:
-;Protected Mode :
-;MSW  : 0033
-;GDTR : 007F007F007F007FFFFF
-;LDTR : 0000
-;IDTR : 0FFF0FFF0FFF0FFFFFFF
-;TR : 0040
+mov [cr0_data],rax
+
+bt rax,1 ;Checking PE bit, if 1=Protected Mode, else Real Mode
+jc prmode
+print rmodemsg,rmsg_len
+jmp nxt1
+
+prmode: print pmodemsg,pmsg_len
+
+nxt1: sgdt [gdt]
+sldt [ldt]
+sidt [idt]
+str [tr]
+print gdtmsg,gmsg_len
+
+mov bx,[gdt+4]
+call print_num
+
+mov bx,[gdt+2]
+call print_num
+
+print colmsg,1
+
+mov bx,[gdt]
+call print_num
+
+print ldtmsg,lmsg_len
+mov bx,[ldt]
+call print_num
+
+print idtmsg,imsg_len
+
+mov bx,[idt+4]
+call print_num
+
+mov bx,[idt+2]
+call print_num
+
+print colmsg,1
+
+mov bx,[idt]
+call print_num
+
+print trmsg,tmsg_len
+
+mov bx,[tr]
+call print_num
+
+print mswmsg,mmsg_len
+
+mov bx,[cr0_data+2]
+call print_num
+
+mov bx,[cr0_data]
+call print_num
+
+print cpumsg,cmsg_len
+
+XOR eax, eax
+CPUID
+MOV ebx, eax
+call print_num
+
+
+print nwline,1
+
+
+exit: mov rax,60
+xor rdi,rdi
+syscall
+
+print_num:
+mov rsi,dnum_buff ;point esi to buffer
+
+mov rcx,04 ;load number of digits to printlay
+
+up1:
+rol bx,4 ;rotate number left by four bits
+mov dl,bl ;move lower byte in dl
+and dl,0fh ;mask upper digit of byte in dl
+add dl,30h ;add 30h to calculate ASCII code
+cmp dl,39h ;compare with 39h
+jbe skip1 ;if less than 39h skip adding 07 more
+add dl,07h ;else add 07
+skip1:
+mov [rsi],dl ;store ASCII code in buffer
+inc rsi ;point to next byte
+loop up1 ;decrement the count of digits to printlay
+    ;if not zero jump to repeat
+
+print dnum_buff,4 ;printlay the number from buffer
+
+ret
+

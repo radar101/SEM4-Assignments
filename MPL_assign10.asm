@@ -1,118 +1,119 @@
-%macro scall 4 ;common macro for input/output
-mov rax,%1
-mov rdi,%2
-mov rsi,%3
-mov rdx,%4
-syscall
-%endmacro
+section .bss
+
+  number: resb 1
+  temp: resb 1
+  num: resb 1
+  n: resw 1
+  nod: resb 1
 
 section .data
-num db 00h
-msg db "Factorial is : "
-msglen equ $-msg
-msg1 db "Program to find Factorial of a number",0Ah
-db "Enter the number : ",
-msg1len equ $-msg1
 
-zerofact db " 00000001 "
-zerofactlen equ $-zerofact
-
-section .bss
-dispnum resb 16
-result resb 4
-temp resb 3
+msg1: db "Enter the number : "
+size1: equ $-msg1
+msg2: db "factorial of  number: "
+size2: equ $-msg2
+changeline: db " ",0xa
+size3: equ $-changeline
 
 
 section .text
-global _start
+  global _start
+
 _start:
-scall 1, 1, msg1, msg1len
-scall 0, 0, temp, 3 ;accept number from user
-call convert    ;convert number from ascii to hex
-mov [num], dl
+ 
+;Printing the message to enter the number
+  mov eax, 4
+  mov ebx, 1
+  mov ecx, msg1
+  mov edx, size1
+  int 80h
+ 
+  ;Reading the number
+  mov eax, 3
+  mov ebx, 0
+  mov ecx, number
+  mov edx, 1
+  int 80h
+ 
+  sub byte[number], 30h
+  mov al, byte[number]
+  mov ah,0
+  mov word[n],ax
 
-scall 1, 1, msg, msglen
+call fact
 
-xor rdx, rdx
-xor rax, rax
+  mov word[num],cx
+  mov byte[nod], 0 ;No of digits...
 
-mov al, [num] ;store number in accumulator
-cmp al, 01h              ;number is zero or one
-jbe endfact
+  ;to display msg2
+  mov eax, 4
+  mov ebx, 1
+  mov ecx, msg2
+  mov edx, size2
+  int 80h
 
-xor rbx, rbx
-mov bl, 01h
-call factr ;call factorial procedure
-call display
+extract_no:
 
-call Exit
-endfact:
-scall 1, 1, zerofact, zerofactlen
+  cmp word[num], 0
+  je print_no
+  inc byte[nod]
+  mov dx, 0
+  mov ax, word[num]
+  mov bx, 10
+  div bx
+  push dx
+  mov word[num], ax
+  jmp extract_no
 
-Exit: ;exit system call  
-    mov rax, 60
-    mov rdx, 00
-    syscall
+print_no:
+  cmp byte[nod], 0
+  je end_print
+  dec byte[nod]
+  pop dx
+  mov byte[temp], dl
+  add byte[temp], 30h
 
 
-factr: ;recursive procedure
-    cmp rax, 01h
-    je retcon1
-    push rax
-    dec rax
-   
-    call factr
+  mov eax, 4
+  mov ebx, 1
+  mov ecx, temp
+  mov edx, 1
+  int 80h
 
-    retcon:
-        pop rbx
-        mul ebx
-        jmp endpr
+  jmp print_no
 
-    retcon1: ;if rax=1 return
-        pop rbx
-        jmp retcon
-    endpr:
-ret
+end_print:
+    ; for new line
+    mov eax, 4
+    mov ebx, 1
+    mov ecx, changeline
+    mov edx, size3
+    int 80h
+ 
+    mov eax, 1
+    mov ebx, 0
+    int 80h
 
-display: ; procedure to convert hex to ascii
-        mov rsi,dispnum+15
-        xor rcx,rcx
-        mov cl,16
+fact:
+ 
+  mov ax, word[n]
+  cmp ax, 0
+  je terminate
+  push word[n]
 
-    cont:
-        xor rdx,rdx
-        xor rbx,rbx
-        mov bl,10h
-        div ebx
-        cmp dl,09h
-        jbe skip
-        add dl,07h
-    skip:
-        add dl,48
-        mov [rsi],dl
-        dec rsi
-        loop cont
+  dec word[n]
+  call fact
 
-        scall 1,1,dispnum,16
+  pop word[n]
+  mov dx, word[n]
 
-ret
+  mov ax, cx
+  mul dx
+  mov cx, ax
+  jmp exit
+ 
+terminate:
+  mov cx, 1
 
-convert: ;procedure to convert ascii to hex
-        mov rsi,temp
-        mov cl,02h
-        xor rax,rax
-        xor rdx,rdx
-    contc:
-        rol dl,04h
-        mov al,[rsi]
-        cmp al,39h
-        jbe skipc
-        sub al,07h
-    skipc:
-        sub al,30h
-        add dl,al
-        inc rsi
-        dec cl
-        jnz contc
-
-    ret
+exit:
+  ret

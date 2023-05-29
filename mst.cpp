@@ -85,7 +85,7 @@ public:
     int primsAlgo()
     {
         bool visited[n];
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i <= n; i++)
         {
             visited[i] = false;
         }

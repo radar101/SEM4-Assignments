@@ -1,53 +1,6 @@
 #include <iostream>
 using namespace std;
 
-template <class T>
-class Queue
-{
-public:
-    int size = 200, frontd, reard;
-    T *arr;
-    Queue()
-    {
-        arr = new T[size];
-        frontd = -1;
-        reard = -1;
-    }
-
-    bool empty()
-    {
-        if (frontd == -1 or frontd > reard)
-            return true;
-        else
-            return false;
-    }
-
-    void push(T data)
-    {
-        if (frontd == -1 and reard == -1)
-        {
-            frontd++;
-        }
-        reard++;
-        arr[reard] = data;
-    }
-
-    void pop()
-    {
-        front++;
-    }
-
-    T front()
-    {
-        return arr[frontd];
-    }
-
-    T rear()
-    {
-        return arr[reard];
-    }
-};
-
 class Graph
 {
     int n;

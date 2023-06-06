@@ -1,242 +1,240 @@
-#include <bits/stdc++.h>
+//Credits: Sarthak Dhaytonde
+
+#include <iostream>
 using namespace std;
+
 
 class Node
 {
-    int key, freq;
-    Node *right, *left;
-    Node(int key, int freq)
-    {
-        this->key = key;
-        this->freq = freq;
-        this->right = NULL;
-        this->left = NULL;
-    }
+    char data;
+    Node *lchild;
+    Node *rchild;
+
+public:
+    Node();
+    Node(char s);
     friend class OBST;
 };
 
+Node::Node()
+{
+    data = ' ';
+    lchild = rchild = NULL;
+}
+
+Node::Node(char data)
+{
+    this->data = data;
+    lchild = rchild = NULL;
+}
+
 class OBST
 {
-public:
     Node *root;
-    Node **arr;
-    int **w;
-    int **c;
-    int **r;
-    int *p;
-    int *key;
+    float *p;
+    float *q;
+    char *input;
+    double **w;
+    double **c;
+    double **r;
     int n;
 
-    OBST(int n)
+public:
+    OBST();
+    void getInfo();
+    void calculateWeight();
+    Node *createTree(int, int);
+    void inorder(Node *root);
+    void preorder(Node *root);
+    void postorder(Node *root);
+    void displayMat();
+    Node *getroot()
     {
-        this->n = n;
-        root = NULL;
-        arr = new Node *[n];
-        w = new int*[n + 1];
-        c = new int*[n + 1];
-        r = new int*[n + 1];
-        p = new int[n];
-        key = new int[n];
-        for (int i = 0; i <= n; i++) {
-            w[i] = new int[n + 1];
-            c[i] = new int[n + 1];
-            r[i] = new int[n + 1];
-        }
-    }
-
-    void takeData()
-    {
-        int keyi, freq;
-        Node *temp;
-        for (int i = 0; i < n; i++)
-        {
-            cout << "Enter key and freq: " << endl;
-            cin >> keyi >> freq;
-            key[i] = keyi;
-            p[i] = freq;
-            temp = new Node(keyi, freq);
-            arr[i] = temp;
-        }
-    }
-
-    void sortData()
-    {
-        for (int i = 0; i < n; i++)
-        {
-            for (int j = 0; j < n; j++)
-            {
-                if (arr[i]->freq > arr[j]->freq)
-                {
-                    Node *temp = arr[i];
-                    arr[i] = arr[j];
-                    arr[j] = temp;
-                }
-            }
-        }
-        for(int i=0;i<3;i++)
-        {
-            obst(arr[i]);
-        }
-    }
-
-    void displayData()
-    {
-        for (int i = 0; i < n; i++)
-        {
-            cout << arr[i]->key << " " << arr[i]->freq << endl;
-        }
-    }
-
-    void obst(Node* node)
-    {
-        Node *newNode = node;
-        if (root == NULL)
-        {
-            root = newNode;
-            cout << "inserted as root" << endl;
-        }
-        else
-        {
-            Node *current = root;
-            Node *parent = NULL;
-            while (true)
-            {
-                parent = current;
-                if (newNode->key == current->key)
-                {
-                    break;
-                }
-                else if(newNode->key < current->key)
-                {
-                    current = current->left;
-                    if (current == NULL)
-                    {
-                        parent->left = newNode;
-                        cout << "insert at left" << endl;
-                        break;
-                    }
-                   
-                }else{
-                     current = current->right;
-                    if (current == NULL)
-                    {
-                        parent->right = newNode;
-                        cout << "insert at right" << endl;
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    void constructTables()
-    {
-        for (int i = 0; i < n; i++)
-        {
-            w[i][i + 1] = p[i + 1];
-            r[i][i + 1] = i + 1;
-            c[i][i + 1] = w[i][i + 1];
-        }
-
-        for (int m = 2; m <= n; m++)
-        {
-            for (int i = 0; i < n - m; i++)
-            {
-                int min = 999;
-                int j = i + m;
-                int k;
-                w[i][j] = w[i][j - 1] + p[j];
-                for (int i1 = i + 1; i1 < j; i1++)
-                {
-                    int sum1 = c[i][i1 - 1] + c[i1][j];
-                    if (sum1 < min)
-                    {
-                        min = sum1;
-                        k = i1;
-                    }
-                }
-                c[i][j] = w[i][j] + c[i][k - 1] + c[k][j];
-                r[i][j] = k + 1;
-            }
-        }
-        for(int i=0;i<=3;i++){
-            for(int j=3;j>=0;j--){
-                Node *newNode = new Node(key[r[i][j]], 0);
-                obst(newNode);
-            }
-        }
-    }
-
-    void inorder(Node *cur)
-    {
-        if (cur == NULL)
-            return;
-        inorder(cur->left);
-        cout << cur->key << " ";
-        inorder(cur->right);
-    }
-
-    void preorder(Node *cur)
-    {
-        if (cur == NULL)
-            return;
-        cout << cur->key << " ";
-        preorder(cur->left);
-        preorder(cur->right);
+        return root;
     }
 };
 
 
+OBST::OBST()
+{
+    root = NULL;
+    p = q = NULL;
+    input = NULL;
+    n = 0;
+}
+
+
+void OBST::getInfo()
+{
+    input = new char[n + 1];
+    p = new float[n];
+    q = new float[n + 1];
+    cout << "\nEnter number of identifiers :-> " << endl;
+    cin >> n;
+    input[0] = ' ';
+    for (int i = 1; i < n + 1; i++)
+    {
+        cout << "I" << i << ":-> ";
+        cin >> input[i];
+    }
+    cout << "Enter Succesful probability-->\n";
+    for (int i = 0; i < n; i++)
+    {
+        cout << "p" << i << " ";
+        cin >> p[i];
+    }
+    cout << "Enter Unsuccesful probability-->\n";
+    for (int i = 0; i < n + 1; i++)
+    {
+        cout << "q" << i << " ";
+        cin >> q[i];
+    }
+    this->calculateWeight();
+}
+
+void OBST::displayMat()
+{
+    for (int i = 0; i < n + 1; i++)
+    {
+        for (int j = 0; j < n + 1; j++)
+        {
+            cout << "(" << w[j][i] << "," << c[j][i] << "," << r[j][i] << ") ";
+        }
+        cout << endl;
+    }
+    cout << "\n\nCost:-> " << endl;
+}
+
+
+void OBST::calculateWeight()
+{
+    w = new double *[n + 1];
+    c = new double *[n + 1];
+    r = new double *[n + 1];
+    for (int i = 0; i < n + 1; i++)
+    {
+        w[i] = new double[n + 1];
+        c[i] = new double[n + 1];
+        r[i] = new double[n + 1];
+    }
+    for (int i = 0; i < n; i++)
+    {
+        w[i][i] = q[i];
+        r[i][i] = c[i][i] = 0;
+        w[i][i + 1] = q[i] + q[i + 1] + p[i];
+        r[i][i + 1] = i + 1;
+        c[i][i + 1] = w[i][i + 1];
+    }
+    w[n][n] = q[n];
+    r[n][n] = c[n][n] = 0;
+    for (int m = 2; m <= n; m++)
+    {
+        for (int i = 0; i <= n - m; i++)
+        {
+            double min = 999;
+            int j = i + m;
+            int k = 0;
+            w[i][j] = w[i][j - 1] + p[j - 1] + q[j];
+            for (int i1 = i + 1; i1 <= j; i1++)
+            {
+                double sum = c[i][i1 - 1] + c[i1][j];
+                if (sum < min)
+                {
+                    min = sum;
+                    k = i1;
+                }
+            }
+            c[i][j] = w[i][j] + c[i][k - 1] + c[k][j];
+            r[i][j] = k;
+        }
+    }
+    root = createTree(0, n);
+};
+
+
+Node *OBST::createTree(int i, int j)
+{
+    if (i != j)
+    {
+        int k = r[i][j];
+        Node *nn = new Node(input[k]);
+        nn->lchild = createTree(i, k - 1);
+        nn->rchild = createTree(k, j);
+        return nn;
+    }
+    else
+    {
+        return NULL;
+    }
+}
+
+
+void OBST::inorder(Node *root)
+{
+    if (root != NULL)
+    {
+        inorder(root->lchild);
+        cout << root->data << " ";
+        inorder(root->rchild);
+    }
+}
+
+
+void OBST::preorder(Node *root)
+{
+    if (root != NULL)
+    {
+        cout << root->data << " ";
+        preorder(root->lchild);
+        preorder(root->rchild);
+    }
+}
+
+
+void OBST::postorder(Node *root)
+{
+    if (root != NULL)
+    {
+        postorder(root->lchild);
+        postorder(root->rchild);
+        cout << root->data << " ";
+    }
+}
+
 int main()
 {
-    int choice;
-    cout << "Enter the number of nodes: ";
-    int n;
-    cin >> n;
-    OBST obj(n);
-
-    do
+    OBST obj;
+    obj.getInfo();
+    while (true)
     {
-        cout << "\n--------- MENU ---------\n";
-        cout << "1. Take data\n";
-        cout << "2. Sort data\n";
-        cout << "3. Construct tables\n";
-        cout << "4. Inorder and Preorder Traversal\n";
-        cout << "5. Exit\n";
-        cout << "Enter your choice: ";
-        cin >> choice;
-
-        switch (choice)
+        int option, num;
+        obj.calculateWeight();
+        cout << "\n1.Inorder\n2.Preoder\n3.Postorder\n4.Display Mat\nExit\nChose an option:";
+        cin >> option;
+        if (option == 1)
         {
-        case 1:
-            obj.takeData();
-            break;
-
-        case 2:
-            obj.sortData();
-            break;
-
-        case 3:
-            obj.constructTables();
-            break;
-
-        case 4:
-            cout << "Inorder Traversal: ";
-            obj.inorder(obj.root);
-            cout << "\nPreorder Traversal: ";
-            obj.preorder(obj.root);
+            obj.inorder(obj.getroot());
             cout << endl;
-            break;
-
-        case 5:
-            cout << "Exiting...\n";
-            break;
-
-        default:
-            cout << "Invalid choice! Please try again.\n";
+        }
+        else if (option == 2)
+        {
+            obj.preorder(obj.getroot());
+            cout << endl;
+        }
+        else if (option == 3)
+        {
+            obj.postorder(obj.getroot());
+            cout << endl;
+        }
+        else if (option == 4)
+        {
+            obj.displayMat();
+        }
+        else
+        {
+            cout << "\n-----------THANK YOU !!!!----------\n";
             break;
         }
-    } while (choice != 5);
-
+    }
     return 0;
 }
